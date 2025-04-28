@@ -1,26 +1,212 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Times New Roman Compressed';
+  src: url('/fonts/times-new-roman-compressed.ttf') format('truetype');
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Helvetica Neue Compressed';
+  src: url('/fonts/helvetica-neue-compressed.ttf') format('truetype');
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --yellow: #FBFF00; /* Neon Yellow */
+  --black: #000000;
+  --white: #FFFFFF;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--black);
+  color: var(--white);
+  font-family: 'Helvetica Neue Compressed', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Times New Roman Compressed', serif;
+  font-style: italic;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--yellow);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--yellow);
+}
+
+/* Game specific styles */
+.game-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* Home page specific */
+.home-page {
+  text-align: center;
+  padding: 2rem;
+}
+
+.home-page h1 {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  color: var(--yellow);
+}
+
+.home-page p {
+  font-size: 1.25rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.globe-sketch {
+  max-width: 300px;
+  margin: 2rem auto;
+  opacity: 0.8;
+}
+
+/* Game page specific */
+.game-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.costume-image-container {
+  width: 33.33%;
+  margin: 0 auto;
+}
+
+.score-time-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timer-label {
+  color: var(--yellow);
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+}
+
+.timer-value {
+  color: var(--yellow);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+/* Summary page specific */
+.summary-page {
+  background-color: var(--black);
+  color: var(--white);
+}
+
+.summary-page h2 {
+  color: var(--yellow);
+}
+
+.summary-page .score {
+  color: var(--yellow);
+}
+
+/* Button styles */
+.btn {
+  background-color: var(--yellow);
+  color: var(--black);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background-color: var(--yellow);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Minimal, lightweight styles */
+.minimal-text {
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+/* Utility classes */
+.text-yellow {
+  color: var(--yellow);
+}
+
+.bg-yellow {
+  background-color: var(--yellow);
+}
+
+.text-yellow-400 {
+  color: var(--yellow);
+}
+
+.bg-yellow-400 {
+  background-color: var(--yellow);
+}
+
+.border-yellow-400 {
+  border-color: var(--yellow);
+}
+
+.text-yellow-500 {
+  color: var(--yellow);
+}
+
+.bg-yellow-500 {
+  background-color: var(--yellow);
+}
+
+.border-yellow-500 {
+  border-color: var(--yellow);
+}
+
+.text-black {
+  color: var(--black);
+}
+
+.bg-black {
+  background-color: var(--black);
+}
+
+.text-white {
+  color: var(--white);
+}
+
+.bg-white {
+  background-color: var(--white);
 }
