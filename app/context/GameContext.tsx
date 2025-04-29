@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { MetObject } from '../components/types/met';
 import { fetchCostumeImages } from '../lib/api';
 import { calculateExponentialScore } from '../lib/utils';
@@ -24,6 +24,7 @@ interface GameState {
   timerActive: boolean;
   timeRemaining: number;
   lastGuess: { lat: number; lng: number } | string | null;
+  items: MetObject[];
 }
 
 // Game context interface
@@ -45,6 +46,7 @@ interface GameContextType {
   makeGuess: (guess: { lat: number; lng: number } | string) => void;
   nextRound: () => void;
   restartGame: () => void;
+  handleTimeEnd: () => void;
 }
 
 // Create context with default values
@@ -60,10 +62,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     roundHistory: [],
     timerActive: false,
     timeRemaining: 30, // 30 seconds per round
-    lastGuess: null
+    lastGuess: null,
+    items: []
   });
 
-  const [items, setItems] = useState<MetObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,14 +97,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         console.log('GameContext: Starting to load data');
         setLoading(true);
         setState(prev => ({ ...prev, phase: 'loading' }));
-        setItems([]); // Reset items to avoid stale data
+        setState(prev => ({ ...prev, items: [] })); // Reset items to avoid stale data
         
         // Fetch items with a buffer to ensure we have enough valid items
         const fetchedItems = await fetchCostumeImages(state.totalRounds + 2); // Add buffer for potential invalid items
         
         if (fetchedItems.length >= state.totalRounds) {
           console.log('GameContext: Setting items and moving to playing phase');
-          setItems(fetchedItems);
           setState(prev => ({ 
             ...prev, 
             phase: 'playing',
@@ -126,7 +127,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Current item getter
-  const currentItem = items[state.currentRound - 1] || null;
+  const currentItem = state.items[state.currentRound - 1] || null;
   
   // Debug logging for phase changes
   useEffect(() => {
@@ -135,11 +136,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
   
   // Debug logging for items
   useEffect(() => {
-    console.log(`GameContext: Items updated, count: ${items.length}`);
-    if (items.length > 0) {
-      console.log('GameContext: First item:', items[0]?.title);
+    console.log(`GameContext: Items updated, count: ${state.items.length}`);
+    if (state.items.length > 0) {
+      console.log('GameContext: First item:', state.items[0]?.title);
     }
-  }, [items]);
+  }, [state.items]);
   
   // Handle user guess submission
   const makeGuess = (guess: { lat: number; lng: number } | string) => {
@@ -224,13 +225,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       timerActive: false,
       timeRemaining: 30
     }));
-    setItems([]); // Reset items
+    setState(prev => ({ ...prev, items: [] })); // Reset items
     
     try {
       const fetchedItems = await fetchCostumeImages(state.totalRounds + 2);
       
       if (fetchedItems.length >= state.totalRounds) {
-        setItems(fetchedItems);
         setState(prev => ({ 
           ...prev, 
           phase: 'playing',
@@ -248,6 +248,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   };
   
+  const handleTimeEnd = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      timerActive: false,
+      phase: 'feedback'
+    }));
+  }, []);
+
   // Context value
   const value: GameContextType = {
     phase: state.phase,
@@ -263,7 +271,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     timerActive: state.timerActive,
     makeGuess,
     nextRound,
-    restartGame
+    restartGame,
+    handleTimeEnd
   };
   
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
