@@ -5,9 +5,13 @@ const MET_API_BASE_URL = 'https://collectionapi.metmuseum.org/public/collection/
 const COSTUME_DEPARTMENT_ID = 8; // The Costume Institute department ID (hardcoded based on API docs)
 
 // Add timeout to axios requests
-const axiosWithTimeout = (url: string, timeout: number = 10000) => {
+const axiosWithTimeout = (url: string, timeout: number = 30000) => {
   return axios.get(url, {
-    timeout: timeout, // 10 second timeout
+    timeout: timeout, // 30 second timeout for Vercel
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    }
   });
 };
 

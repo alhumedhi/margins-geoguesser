@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import { Info } from 'lucide-react';
+import Image from 'next/image';
 
 const CostumeDisplay: React.FC = () => {
   const { currentItem, currentRound, totalRounds, phase } = useGame();
+  const [imageError, setImageError] = useState(false);
   
   if (!currentItem) {
     return (
@@ -33,11 +35,21 @@ const CostumeDisplay: React.FC = () => {
         transition={{ duration: 0.5 }}
         key={currentItem.objectID} // Animate when image changes
       >
-        <img 
-          src={currentItem.primaryImage} 
-          alt={currentItem.title}
-          className="w-full aspect-square object-contain bg-black"
-        />
+        {!imageError ? (
+          <Image 
+            src={currentItem.primaryImage} 
+            alt={currentItem.title}
+            width={500}
+            height={500}
+            className="w-full aspect-square object-contain bg-black"
+            onError={() => setImageError(true)}
+            priority
+          />
+        ) : (
+          <div className="w-full aspect-square bg-black/20 flex items-center justify-center">
+            <p className="text-yellow">Image failed to load</p>
+          </div>
+        )}
         
         {/* Show minimal info during playing phase */}
         {phase === 'playing' && (
