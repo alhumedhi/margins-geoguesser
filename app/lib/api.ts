@@ -747,7 +747,19 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
         console.log(`[API] Fetching object ${id}...`);
         const response = await axiosWithTimeout(`${MET_API_BASE_URL}/objects/${id}`);
         console.log(`[API] Successfully fetched object ${id}`);
-        return response.data as any;
+        
+        // Ensure the image URL is properly formatted
+        const data = response.data as { primaryImage?: string; objectID: number; title?: string; country?: string; culture?: string; geographyType?: string };
+        if (data.primaryImage) {
+          // Ensure the URL is absolute and uses HTTPS
+          if (!data.primaryImage.startsWith('http')) {
+            data.primaryImage = `https://images.metmuseum.org${data.primaryImage}`;
+          } else if (data.primaryImage.startsWith('http://')) {
+            data.primaryImage = data.primaryImage.replace('http://', 'https://');
+          }
+        }
+        
+        return data;
       } catch (error) {
         console.error(`[API] Error fetching object ${id}:`, error);
         return null;
@@ -762,19 +774,31 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
     // Much more lenient filtering - only require title and image
     console.log("[API] Filtering for valid results with minimal requirements...");
     const validResults = results
-      .filter(item => {
+      .filter((item): item is NonNullable<typeof item> => {
         if (!item) {
           console.log("[API] Filtering: Item is null");
           return false;
         }
+        
+        // Check if the image URL is valid
         if (!item.primaryImage) {
           console.log(`[API] Filtering: Item ${item.objectID} has no primary image`);
           return false;
         }
+        
+        // Verify the image URL is properly formatted
+        try {
+          new URL(item.primaryImage);
+        } catch (e) {
+          console.log(`[API] Filtering: Item ${item.objectID} has invalid image URL: ${item.primaryImage}`);
+          return false;
+        }
+        
         if (!item.title) {
           console.log(`[API] Filtering: Item ${item.objectID} has no title`);
           return false;
         }
+        
         return true;
       })
       .map(item => {
@@ -827,7 +851,7 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
           console.log(`[API] Item ${index}:`, {
             id: item.objectID,
             title: item.title,
-            primaryImage: !!item.primaryImage,
+            primaryImage: item.primaryImage,
             country: item.country,
             culture: item.culture,
             geographyType: item.geographyType

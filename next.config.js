@@ -11,6 +11,8 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    unoptimized: false,
+    domains: ['images.metmuseum.org'],
   },
   async headers() {
     return [

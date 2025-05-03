@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
-import { Info } from 'lucide-react';
+import { Info, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 
 const CostumeDisplay: React.FC = () => {
   const { currentItem, currentRound, totalRounds, phase } = useGame();
   const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (currentItem?.primaryImage) {
+      // Ensure the URL is properly formatted for Next.js Image component
+      const url = new URL(currentItem.primaryImage);
+      setImageUrl(url.toString());
+      setIsLoading(true);
+      setImageError(false);
+    }
+  }, [currentItem?.primaryImage]);
   
   if (!currentItem) {
     return (
@@ -33,21 +45,35 @@ const CostumeDisplay: React.FC = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        key={currentItem.objectID} // Animate when image changes
+        key={currentItem.objectID}
       >
-        {!imageError ? (
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <Loader2 className="w-8 h-8 text-yellow animate-spin" />
+          </div>
+        )}
+        
+        {!imageError && imageUrl ? (
           <Image 
-            src={currentItem.primaryImage} 
+            src={imageUrl}
             alt={currentItem.title}
             width={500}
             height={500}
             className="w-full aspect-square object-contain bg-black"
-            onError={() => setImageError(true)}
+            onError={() => {
+              setImageError(true);
+              setIsLoading(false);
+            }}
+            onLoadingComplete={() => setIsLoading(false)}
             priority
+            quality={90}
           />
         ) : (
           <div className="w-full aspect-square bg-black/20 flex items-center justify-center">
-            <p className="text-yellow">Image failed to load</p>
+            <div className="text-center">
+              <p className="text-yellow mb-2">Image failed to load</p>
+              <p className="text-yellow/70 text-sm">Try refreshing the page</p>
+            </div>
           </div>
         )}
         
