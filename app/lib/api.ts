@@ -738,7 +738,7 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
     const shuffledIds = [...objectIds].sort(() => 0.5 - Math.random());
     
     // Increase the number of items to fetch significantly
-    const fetchCount = Math.min(20, shuffledIds.length); // Fetch up to 20 items at once
+    const fetchCount = Math.min(50, shuffledIds.length); // Increased from 20 to 50
     console.log(`[API] Fetching details for ${fetchCount} objects`);
     
     // Fetch details for multiple objects in parallel
@@ -748,15 +748,32 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
         const response = await axiosWithTimeout(`${MET_API_BASE_URL}/objects/${id}`);
         console.log(`[API] Successfully fetched object ${id}`);
         
-        // Ensure the image URL is properly formatted
-        const data = response.data as { primaryImage?: string; objectID: number; title?: string; country?: string; culture?: string; geographyType?: string };
+        // Add type assertion for the API response
+        const data = response.data as {
+          primaryImage?: string;
+          objectID: number;
+          title?: string;
+          country?: string;
+          culture?: string;
+          geographyType?: string;
+        };
+        
+        // Enhanced image URL handling
         if (data.primaryImage) {
-          // Ensure the URL is absolute and uses HTTPS
-          if (!data.primaryImage.startsWith('http')) {
-            data.primaryImage = `https://images.metmuseum.org${data.primaryImage}`;
-          } else if (data.primaryImage.startsWith('http://')) {
-            data.primaryImage = data.primaryImage.replace('http://', 'https://');
+          try {
+            // Try to construct URL to validate it
+            const url = new URL(data.primaryImage);
+            // Ensure HTTPS
+            if (url.protocol === 'http:') {
+              data.primaryImage = data.primaryImage.replace('http://', 'https://');
+            }
+          } catch (e) {
+            // If URL is invalid or relative, try to fix it
+            if (!data.primaryImage.startsWith('http')) {
+              data.primaryImage = `https://images.metmuseum.org${data.primaryImage.startsWith('/') ? '' : '/'}${data.primaryImage}`;
+            }
           }
+          console.log(`[API] Processed image URL for object ${id}: ${data.primaryImage}`);
         }
         
         return data;
@@ -771,8 +788,8 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
     
     console.log(`[API] Successfully fetched ${results.filter(Boolean).length} objects`);
     
-    // Much more lenient filtering - only require title and image
-    console.log("[API] Filtering for valid results with minimal requirements...");
+    // More lenient filtering
+    console.log("[API] Filtering for valid results...");
     const validResults = results
       .filter((item): item is NonNullable<typeof item> => {
         if (!item) {
@@ -780,22 +797,18 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
           return false;
         }
         
-        // Check if the image URL is valid
+        // Log the full item for debugging
+        console.log(`[API] Processing item:`, {
+          id: item.objectID,
+          hasImage: !!item.primaryImage,
+          imageUrl: item.primaryImage,
+          hasTitle: !!item.title,
+          title: item.title
+        });
+        
+        // Only require an image URL
         if (!item.primaryImage) {
           console.log(`[API] Filtering: Item ${item.objectID} has no primary image`);
-          return false;
-        }
-        
-        // Verify the image URL is properly formatted
-        try {
-          new URL(item.primaryImage);
-        } catch (e) {
-          console.log(`[API] Filtering: Item ${item.objectID} has invalid image URL: ${item.primaryImage}`);
-          return false;
-        }
-        
-        if (!item.title) {
-          console.log(`[API] Filtering: Item ${item.objectID} has no title`);
           return false;
         }
         
@@ -806,8 +819,7 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
         const processedItem = processMetObject(item);
         
         // If no coordinates found, use default coordinates
-        if (processedItem.geographyLat === undefined || processedItem.geographyLng === undefined) {
-          console.log(`[API] No coordinates found for item ${item.objectID}, using default coordinates`);
+        if (!processedItem.geographyLat || !processedItem.geographyLng) {
           // Try to get coordinates from country first
           if (item.country) {
             const coords = getCountryCoordinates(item.country);
@@ -818,7 +830,7 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
           }
           
           // If still no coordinates, try culture
-          if ((processedItem.geographyLat === undefined || processedItem.geographyLng === undefined) && item.culture) {
+          if ((!processedItem.geographyLat || !processedItem.geographyLng) && item.culture) {
             const countryFromCulture = mapCultureToCountry(item.culture);
             if (countryFromCulture) {
               const coords = getCountryCoordinates(countryFromCulture);
@@ -830,10 +842,9 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
           }
           
           // If still no coordinates, use a default location (New York, where the MET is)
-          if (processedItem.geographyLat === undefined || processedItem.geographyLng === undefined) {
+          if (!processedItem.geographyLat || !processedItem.geographyLng) {
             processedItem.geographyLat = 40.7794;
             processedItem.geographyLng = -73.9632;
-            console.log(`[API] Using default MET coordinates for item ${item.objectID}`);
           }
         }
         
@@ -853,19 +864,16 @@ export async function fetchCostumeImages(count: number = 10): Promise<MetObject[
             title: item.title,
             primaryImage: item.primaryImage,
             country: item.country,
-            culture: item.culture,
-            geographyType: item.geographyType
+            culture: item.culture
           });
         }
       });
       
       // If we still have no valid items, try one more time with a different set
-      if (validResults.length === 0 && shuffledIds.length > fetchCount) {
+      if (shuffledIds.length > fetchCount) {
         console.log("[API] No valid items found, trying again with next batch...");
         return fetchCostumeImages(count);
       }
-    } else {
-      console.log("[API] Valid items found, returning data");
     }
     
     return validResults;

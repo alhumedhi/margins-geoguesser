@@ -97,7 +97,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         console.log('GameContext: Starting to load data');
         setLoading(true);
         setState(prev => ({ ...prev, phase: 'loading' }));
-        setState(prev => ({ ...prev, items: [] })); // Reset items to avoid stale data
         
         // Fetch items with a buffer to ensure we have enough valid items
         const fetchedItems = await fetchCostumeImages(state.totalRounds + 2); // Add buffer for potential invalid items
@@ -106,25 +105,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
           console.log('GameContext: Setting items and moving to playing phase');
           setState(prev => ({ 
             ...prev, 
+            items: fetchedItems,
             phase: 'playing',
             timerActive: true,
             timeRemaining: 30
           }));
+          setLoading(false);
           console.log(`GameContext: Successfully loaded ${fetchedItems.length} costume items`);
         } else {
-          // Instead of showing an error, keep trying to fetch items
           console.log('GameContext: Not enough items found, retrying...');
           setTimeout(loadData, 2000); // Retry after 2 seconds
         }
       } catch (err) {
         console.error('GameContext: Error loading data:', err);
-        // Instead of showing an error, keep trying to fetch items
         setTimeout(loadData, 2000); // Retry after 2 seconds
       }
     };
 
     loadData();
-  }, []);
+  }, [state.totalRounds]);
 
   // Current item getter
   const currentItem = state.items[state.currentRound - 1] || null;

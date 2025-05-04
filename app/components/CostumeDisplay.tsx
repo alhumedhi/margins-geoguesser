@@ -5,22 +5,51 @@ import { Info, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 
 const CostumeDisplay: React.FC = () => {
-  const { currentItem, currentRound, totalRounds, phase } = useGame();
+  const { currentItem, currentRound, totalRounds, phase, loading } = useGame();
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   
   useEffect(() => {
-    if (currentItem?.primaryImage) {
-      // Ensure the URL is properly formatted for Next.js Image component
-      const url = new URL(currentItem.primaryImage);
-      setImageUrl(url.toString());
-      setIsLoading(true);
-      setImageError(false);
+    if (currentItem) {
+      console.log('[CostumeDisplay] Current item:', currentItem);
+      if (currentItem.primaryImage) {
+        try {
+          // Ensure the URL is properly formatted
+          const url = new URL(currentItem.primaryImage);
+          // Force HTTPS
+          const httpsUrl = url.protocol === 'http:' 
+            ? currentItem.primaryImage.replace('http://', 'https://') 
+            : currentItem.primaryImage;
+          setImageUrl(httpsUrl);
+          setIsLoading(true);
+          setImageError(false);
+          console.log('[CostumeDisplay] Image URL set to:', httpsUrl);
+        } catch (e) {
+          console.error('[CostumeDisplay] Invalid image URL:', currentItem.primaryImage, e);
+          setImageUrl(null);
+          setImageError(true);
+        }
+      } else {
+        console.warn('[CostumeDisplay] No primaryImage for currentItem:', currentItem);
+        setImageUrl(null);
+        setImageError(true);
+      }
+    } else {
+      console.warn('[CostumeDisplay] No currentItem available');
     }
-  }, [currentItem?.primaryImage]);
+  }, [currentItem]);
+  
+  if (loading) {
+    return (
+      <div className="w-full aspect-square bg-black/20 rounded-md border border-yellow flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-yellow animate-spin" />
+      </div>
+    );
+  }
   
   if (!currentItem) {
+    console.warn('[CostumeDisplay] Rendering no image available state');
     return (
       <div className="w-full aspect-square bg-black/20 rounded-md border border-yellow flex items-center justify-center">
         <p className="text-yellow">No image available</p>
@@ -56,15 +85,19 @@ const CostumeDisplay: React.FC = () => {
         {!imageError && imageUrl ? (
           <Image 
             src={imageUrl}
-            alt={currentItem.title}
+            alt={currentItem.title || 'Costume item'}
             width={500}
             height={500}
             className="w-full aspect-square object-contain bg-black"
-            onError={() => {
+            onError={(e) => {
+              console.error('[CostumeDisplay] Image failed to load:', imageUrl);
               setImageError(true);
               setIsLoading(false);
             }}
-            onLoadingComplete={() => setIsLoading(false)}
+            onLoadingComplete={() => {
+              console.log('[CostumeDisplay] Image loaded successfully:', imageUrl);
+              setIsLoading(false);
+            }}
             priority
             quality={90}
           />
