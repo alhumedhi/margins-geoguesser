@@ -39,7 +39,23 @@ const GameLayout: React.FC<GameLayoutProps> = ({ children, className }) => {
           'w-full md:w-2/3',
           'order-2 md:order-1'
         )}>
-          {children}
+          {/* Search bar container - shown above globe on mobile */}
+          <div className="block md:hidden w-full">
+            {React.Children.map(children, child => {
+              if (React.isValidElement(child) && child.type.name === 'CountrySearch') {
+                return child;
+              }
+              return null;
+            })}
+          </div>
+
+          {/* Globe and other content */}
+          {React.Children.map(children, child => {
+            if (React.isValidElement(child) && child.type.name !== 'CountrySearch') {
+              return child;
+            }
+            return null;
+          })}
         </main>
 
         {/* Sidebar */}
@@ -48,6 +64,16 @@ const GameLayout: React.FC<GameLayoutProps> = ({ children, className }) => {
           'flex flex-col gap-6',
           'order-1 md:order-2'
         )}>
+          {/* Search bar - shown in sidebar on desktop */}
+          <div className="hidden md:block">
+            {React.Children.map(children, child => {
+              if (React.isValidElement(child) && child.type.name === 'CountrySearch') {
+                return child;
+              }
+              return null;
+            })}
+          </div>
+
           {/* Game info */}
           <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 border border-yellow/20">
             <h1 className="text-2xl md:text-3xl font-bold text-yellow mb-2">
